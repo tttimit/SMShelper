@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">短信回发助手</string>
+    <string name="app_status">应用开关</string>
+    <string name="lib_a">消息库A发送延时（秒）</string>
+    <string name="lib_b">消息库B发送延时（秒）</string>
+    <string name="help">使用说明</string>
+    <string name="help_content1">必须开启开关，本应用才能正常工作，退出后尽量不要使用软件管家清理进程，
+        避免误杀。</string>
+    <string name="help_content2">未接来电挂断后，开始计时。本应用会在后台根据您设置的时间，分别发送消息库A和消息库B中的消息给未接来电号码（若设置的时间小于0秒，系统会按照默认设置运行）。</string>
+    <string name="help_content3">已经发送过消息的号码会在“已发送”页面中显示。</string>
+    <string name="already_send_desc">已发送（此列表内的号码不会再发送信息）</string>
+    <string name="already_send_remove_all">全部清空</string>
+    <string name="text_remove">删除</string>
+</resources>
