@@ -1,7 +1,9 @@
 package tttimit.com.smshelper.activity;
 
+import android.content.DialogInterface;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.Editable;
@@ -20,7 +22,16 @@ import android.widget.TabHost;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import tttimit.com.smshelper.Domain.Item;
+import tttimit.com.smshelper.Domain.Message;
+import tttimit.com.smshelper.Domain.MessageListAdapter;
+import tttimit.com.smshelper.Domain.SentNumberListAdapter;
 import tttimit.com.smshelper.R;
+import tttimit.com.smshelper.Utils.DBHelper;
+import tttimit.com.smshelper.Utils.Dao;
 import tttimit.com.smshelper.receiver.CallReceiver;
 import tttimit.com.smshelper.receiver.SmsReceiver;
 
@@ -28,18 +39,18 @@ public class MainActivity extends AppCompatActivity implements TextView.OnEditor
         View.OnClickListener, CompoundButton.OnCheckedChangeListener, TextWatcher {
 
     private TabHost mTabHost;
-    private FrameLayout mFrameLayout;
-    private LinearLayout ll_home;       //主页面
-    private LinearLayout ll_lib;        //库A和库B
-    private LinearLayout ll_sent;       //已发送的号码
+    //    private FrameLayout mFrameLayout;
+//    private LinearLayout ll_home;       //主页面
+//    private LinearLayout ll_lib;        //库A和库B
+//    private LinearLayout ll_sent;       //已发送的号码
     private Switch switch1;         //应用开关
     private EditText time_a;        //A库延时
     private EditText time_b;        //B库延时
     private Button bt_add_a;        //为A库添加消息
     private Button bt_add_b;        //为B库添加消息
     private Button bt_remove_all;        //移除已发送中所有的记录
-    private ListView lv_a;
-    private ListView lv_b;
+    private ListView lv_msgLib_a;
+    private ListView lv_msgLib_b;
     private ListView lv_sent;
     private static final String TAG = "SMS_MainActivity";
     public static String SMS_RECEIVE_INTENT = "android.provider.Telephony.SMS_RECEIVED";
@@ -48,10 +59,18 @@ public class MainActivity extends AppCompatActivity implements TextView.OnEditor
     public static int TIME_FOR_A;
     public static int TIME_FOR_B;
 
-    private IntentFilter filter_sms;
-    private IntentFilter filter_call;
-    private SmsReceiver smsReceiver;
-    private CallReceiver callReveiver;
+//    private IntentFilter filter_sms;
+//    private IntentFilter filter_call;
+//    private SmsReceiver smsReceiver;
+//    private CallReceiver callReveiver;
+
+    private Dao dao;
+    private List<Message> msgList_A;
+    private List<Message> msgList_B;
+    private List<Item> sentNumberList;
+    private MessageListAdapter msgLibAdapter_A;
+    private MessageListAdapter msgLibAdapter_B;
+    private SentNumberListAdapter sentNumbersAdapter;
 
     private SharedPreferences pref;
 
@@ -61,6 +80,31 @@ public class MainActivity extends AppCompatActivity implements TextView.OnEditor
         initView();
         initData();
         initEvent();
+        initMessageList_SentNumbers();
+    }
+
+    /**
+     * 初始化消息库A和消息库B以及已发送号码库
+     */
+    private void initMessageList_SentNumbers() {
+        dao = Dao.getSingleDao(this);
+        msgList_A = dao.getAllMessages(DBHelper.TABLE_LIB_A);
+        msgList_B = dao.getAllMessages(DBHelper.TABLE_LIB_B);
+        sentNumberList = dao.getSentNumbers();
+
+        if (msgList_A != null) {
+            msgLibAdapter_A = new MessageListAdapter(this, DBHelper.TABLE_LIB_A, msgList_A);
+            lv_msgLib_a.setAdapter(msgLibAdapter_A);
+        }
+        if (msgList_B != null) {
+            msgLibAdapter_B = new MessageListAdapter(this, DBHelper.TABLE_LIB_B, msgList_B);
+            lv_msgLib_b.setAdapter(msgLibAdapter_B);
+        }
+
+        if (sentNumberList != null) {
+            sentNumbersAdapter = new SentNumberListAdapter(this, sentNumberList);
+            lv_sent.setAdapter(sentNumbersAdapter);
+        }
     }
 
     private void initView() {
@@ -72,8 +116,8 @@ public class MainActivity extends AppCompatActivity implements TextView.OnEditor
         bt_add_a = (Button) findViewById(R.id.bt_add_a);
         bt_add_b = (Button) findViewById(R.id.bt_add_b);
         bt_remove_all = (Button) findViewById(R.id.bt_remove_all);
-        lv_a = (ListView) findViewById(R.id.lv_lib_a);
-        lv_b = (ListView) findViewById(R.id.lv_lib_b);
+        lv_msgLib_a = (ListView) findViewById(R.id.lv_lib_a);
+        lv_msgLib_b = (ListView) findViewById(R.id.lv_lib_b);
         lv_sent = (ListView) findViewById(R.id.lv_sent);
     }
 
@@ -89,10 +133,10 @@ public class MainActivity extends AppCompatActivity implements TextView.OnEditor
                 .setIndicator("已发送", getResources().getDrawable(R.drawable.sent))
                 .setContent(R.id.ll_sent));
 
-        filter_sms = new IntentFilter(SMS_RECEIVE_INTENT);
-        filter_call = new IntentFilter(MISSED_CALL_INTENT);
-        smsReceiver = new SmsReceiver();
-        callReveiver = new CallReceiver();
+//        filter_sms = new IntentFilter(SMS_RECEIVE_INTENT);
+//        filter_call = new IntentFilter(MISSED_CALL_INTENT);
+//        smsReceiver = new SmsReceiver();
+//        callReveiver = new CallReceiver();
 
         pref = getSharedPreferences("setting", MODE_PRIVATE);
         APP_STATUS = pref.getInt("app_status", 0);
@@ -100,8 +144,8 @@ public class MainActivity extends AppCompatActivity implements TextView.OnEditor
         TIME_FOR_B = pref.getInt("time_for_b", 120);
 
         switch1.setChecked(APP_STATUS == 1 ? true : false);
-        time_a.setText(TIME_FOR_A+"");
-        time_b.setText(TIME_FOR_B+"");
+        time_a.setText(TIME_FOR_A + "");
+        time_b.setText(TIME_FOR_B + "");
 
     }
 
@@ -111,6 +155,7 @@ public class MainActivity extends AppCompatActivity implements TextView.OnEditor
         time_b.setOnEditorActionListener(this);
         bt_add_a.setOnClickListener(this);
         bt_add_b.setOnClickListener(this);
+        bt_remove_all.setOnClickListener(this);
         switch1.setOnCheckedChangeListener(this);
     }
 
@@ -130,14 +175,83 @@ public class MainActivity extends AppCompatActivity implements TextView.OnEditor
         switch (v.getId()) {
             case R.id.bt_add_a:
                 Log.i(TAG, "click bt_add_a");
+                final EditText et_contentA = new EditText(this);
+                new AlertDialog.Builder(this).setTitle("请输入消息").setIcon(
+                        android.R.drawable.ic_dialog_info).setView(et_contentA)
+                        .setPositiveButton("确定", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                String content = et_contentA.getText().toString();
+                                if (dao.insertLib(DBHelper.TABLE_LIB_A, content)) {
+                                    Toast.makeText(MainActivity.this, "消息添加成功！",
+                                            Toast.LENGTH_LONG).show();
+                                    refreshList(DBHelper.TABLE_LIB_A);
+                                }
+                                dialog.dismiss();
+                            }
+                        })
+                        .setNegativeButton("取消", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                dialog.dismiss();
+                            }
+                        }).show();
                 break;
             case R.id.bt_add_b:
                 Log.i(TAG, "click bt_add_b");
+                final EditText et_contentB = new EditText(this);
+                new AlertDialog.Builder(this).setTitle("请输入消息").setIcon(
+                        android.R.drawable.ic_dialog_info).setView(et_contentB)
+                        .setPositiveButton("确定", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                String content = et_contentB.getText().toString();
+                                if (dao.insertLib(DBHelper.TABLE_LIB_B, content)) {
+                                    Toast.makeText(MainActivity.this, "消息添加成功！",
+                                            Toast.LENGTH_LONG).show();
+                                    refreshList(DBHelper.TABLE_LIB_B);
+                                }
+                                dialog.dismiss();
+                            }
+                        })
+                        .setNegativeButton("取消", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                dialog.dismiss();
+                            }
+                        }).show();
                 break;
             case R.id.bt_remove_all:
                 Log.i(TAG, "click remove_all");
+                dao.deleteAllSentNumbers();
+                if (sentNumberList != null) {
+                    sentNumberList.clear();
+                    sentNumbersAdapter.notifyDataSetChanged();
+                    Toast.makeText(this, "已发送列表已清空！", Toast.LENGTH_LONG).show();
+                }
                 break;
         }
+    }
+
+    public void refreshList(String tableName) {
+        switch (tableName) {
+            case DBHelper.TABLE_LIB_A:
+                msgList_A = dao.getAllMessages(tableName);
+                lv_msgLib_a.setAdapter(new MessageListAdapter(this, DBHelper.TABLE_LIB_A, msgList_A));
+                break;
+            case DBHelper.TABLE_LIB_B:
+                msgList_B = dao.getAllMessages(tableName);
+                lv_msgLib_b.setAdapter(new MessageListAdapter(this, DBHelper.TABLE_LIB_B, msgList_B));
+                break;
+            case DBHelper.TABLE_SENT_NUMBERS:
+                sentNumberList = dao.getSentNumbers();
+                lv_sent.setAdapter(new SentNumberListAdapter(this, sentNumberList));
+                break;
+            default:
+                initMessageList_SentNumbers();
+                break;
+        }
+
     }
 
 

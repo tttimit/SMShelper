@@ -5,11 +5,14 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.widget.Button;
 import android.widget.TextView;
 
 import java.util.List;
 
 import tttimit.com.smshelper.R;
+import tttimit.com.smshelper.Utils.DBHelper;
+import tttimit.com.smshelper.Utils.Dao;
 
 /**
  * Created by tttimit on 2016/5/29.
@@ -40,7 +43,7 @@ public class SentNumberListAdapter extends BaseAdapter {
     }
 
     @Override
-    public View getView(int position, View convertView, ViewGroup parent) {
+    public View getView(final int position, View convertView, ViewGroup parent) {
 
         Item item = itemList.get(position);
 
@@ -58,7 +61,8 @@ public class SentNumberListAdapter extends BaseAdapter {
             holder.nameText = (TextView) convertView.findViewById(R.id.tv_name);
             holder.numberText = (TextView) convertView.findViewById(R.id.tv_number);
             holder.timeText = (TextView) convertView.findViewById(R.id.tv_time);
-
+            holder.remove = (Button) convertView.findViewById(R.id.bt_remove);
+            holder.id = item.id;
             convertView.setTag(holder);
         }
 
@@ -66,12 +70,25 @@ public class SentNumberListAdapter extends BaseAdapter {
         holder.numberText.setText(item.number);
         holder.timeText.setText(item.time);
 
+        final ViewHolder finalHolder = holder;
+        holder.remove.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Dao dao = Dao.getSingleDao(context);
+                dao.deleteItem(DBHelper.TABLE_SENT_NUMBERS, finalHolder.id);
+                itemList.remove(position);
+                SentNumberListAdapter.this.notifyDataSetChanged();
+            }
+        });
+
         return convertView;
     }
 
     public static class ViewHolder {
+        public int id;
         public TextView nameText;
         public TextView numberText;
         public TextView timeText;
+        public Button remove;
     }
 }

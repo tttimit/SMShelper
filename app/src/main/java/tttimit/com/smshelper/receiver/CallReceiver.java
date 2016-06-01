@@ -70,9 +70,6 @@ public class CallReceiver extends BroadcastReceiver {
                             Log.i(TAG, incomingNumber + " - " + new Date().toLocaleString());
                             context.startService(serviceIntent);
                         }
-                        break;
-
-
 
                 }
             }

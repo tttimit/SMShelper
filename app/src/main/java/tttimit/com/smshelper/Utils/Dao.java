@@ -19,6 +19,7 @@ import tttimit.com.smshelper.Domain.Message;
  */
 public class Dao {
     private static final String TAG = "Dao";
+    private static Dao  singleDao;
 
     // 列定义
     private final String[] SENT_COLUMNS = new String[]{"Id", "Name", "Number", "Time"};
@@ -28,9 +29,16 @@ public class Dao {
     private Context context;
     private DBHelper dbHelper;
 
-    public Dao(Context context) {
+    private Dao(Context context) {
         this.context = context;
         dbHelper = new DBHelper(context);
+    }
+
+    public static Dao getSingleDao(Context context){
+        if(singleDao == null){
+            singleDao = new Dao(context);
+        }
+        return singleDao;
     }
 
     /**
@@ -46,7 +54,7 @@ public class Dao {
         values.put("Name", name);
         values.put("Number", number);
         values.put("Time", time);
-        return insertDate(DBHelper.TABLE_SENT_NUMBERS, values);
+        return insertData(DBHelper.TABLE_SENT_NUMBERS, values);
     }
 
     /**
@@ -59,11 +67,11 @@ public class Dao {
     public boolean insertLib(String tableName, String content) {
         ContentValues values = new ContentValues();
         values.put("Content", content);
-        return insertDate(tableName, values);
+        return insertData(tableName, values);
     }
 
 
-    private boolean insertDate(String tableName, ContentValues contentValues) {
+    private boolean insertData(String tableName, ContentValues contentValues) {
         SQLiteDatabase db = null;
 
         try {
@@ -114,6 +122,25 @@ public class Dao {
         return false;
     }
 
+    public boolean deleteAllSentNumbers(){
+        SQLiteDatabase db = null;
+        try{
+            db =  dbHelper.getWritableDatabase();
+            db.beginTransaction();
+            db.delete(DBHelper.TABLE_SENT_NUMBERS, null, null);
+            db.setTransactionSuccessful();
+            return true;
+        }catch (Exception e){
+            Log.e(TAG, "清空已发送表出错！");
+        }finally{
+            if (db != null) {
+                db.endTransaction();
+                db.close();
+            }
+        }
+        return false;
+    }
+
     /**
      * 判断表中是否有数据
      */
@@ -144,7 +171,7 @@ public class Dao {
         return false;
     }
 
-    public boolean isSent(String number) {
+    public synchronized boolean isSent(String name, String number, String time) {
         int count = 0;
         SQLiteDatabase db = null;
         Cursor cursor = null;
@@ -159,7 +186,10 @@ public class Dao {
             if (cursor.moveToFirst()) {
                 count = cursor.getInt(0);
             }
-            if (count > 0) return true;
+            if (count > 0) {
+                insertSent(name, number, time);
+                return true;
+            }
         } catch (Exception e) {
             Log.e(TAG, "读取已发送号码库出现错误！", e);
         } finally {
@@ -228,22 +258,23 @@ public class Dao {
 
 
     /**
-     * 数据查询 可以想到的需求是从消息库中提取出来消息放到待编辑框中
+     * 从数据库中查询出所有的消息
      */
-    public String getMessage(String tableName, int id) {
+    public synchronized List<Message> getAllMessages(String tableName) {
         SQLiteDatabase db = null;
         Cursor cursor = null;
-
         try {
             db = dbHelper.getReadableDatabase();
-
-            cursor = db.query(tableName, MESSAGE_COLUMNS, "Id = ?", new String[]{String.valueOf(id)}, null, null, null);
-
+            cursor = db.query(tableName, MESSAGE_COLUMNS, null, null, null, null, null);
             if (cursor.getCount() > 0) {
-
+                List<Message> listOfMessages = new ArrayList<Message>();
+                while(cursor.moveToNext()){
+                    listOfMessages.add(parseMessage(cursor));
+                }
+                return listOfMessages;
             }
         } catch (Exception e) {
-            Log.e(TAG, "", e);
+            Log.e(TAG, "读取消息库出现错误, 库：" + tableName, e);
         } finally {
             if (cursor != null) {
                 cursor.close();
@@ -252,15 +283,18 @@ public class Dao {
                 db.close();
             }
         }
-
         return null;
+    }
+
+    public void delete1Number(int id){
+
     }
 
 
     /**
      * 查询是否存在已发送的号码
      */
-    public List<Item> getSentNumbers() {
+    public synchronized List<Item> getSentNumbers() {
         SQLiteDatabase db = null;
         Cursor cursor = null;
 
