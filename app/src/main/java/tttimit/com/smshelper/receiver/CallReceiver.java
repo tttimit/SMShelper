@@ -21,6 +21,7 @@ public class CallReceiver extends BroadcastReceiver {
     private static boolean incomingFlag = false;
     private static PhoneStateListener phoneStateListener;
     private Context context;
+    private String number;
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -36,18 +37,19 @@ public class CallReceiver extends BroadcastReceiver {
         }
     }
 
-    private PhoneStateListener getPhoneStateListener(){
+    private PhoneStateListener getPhoneStateListener() {
         if (phoneStateListener != null)
             return phoneStateListener;
 
         phoneStateListener = new PhoneStateListener() {
             @Override
             public void onCallStateChanged(int state, String incomingNumber) {
-                super.onCallStateChanged(state, incomingNumber);
+//                super.onCallStateChanged(state, incomingNumber);
                 switch (state) {
                     //电话等待接听
                     case TelephonyManager.CALL_STATE_RINGING:
                         incomingFlag = true;
+                        number = incomingNumber;
                         Log.i("PhoneReceiver", "CALL IN RINGING :" + incomingNumber);
                         break;
 
@@ -61,22 +63,23 @@ public class CallReceiver extends BroadcastReceiver {
                     //电话挂机
                     case TelephonyManager.CALL_STATE_IDLE:
                         if (incomingFlag) {
-                            Log.i("PhoneReceiver", "CALL IDLE");
-                            if ("".equals(incomingNumber))
-                                incomingNumber = "未知号码";
+                            Log.i("PhoneReceiver", "CALL IDLE" + number);
+                            if ("".equals(number))
+                                return;
                             Intent serviceIntent = new Intent(context, CallService.class);
-                            serviceIntent.putExtra("INCOMING_NUMBER", incomingNumber);
+                            serviceIntent.putExtra("INCOMING_NUMBER", number);
                             serviceIntent.putExtra("INCOMING_TIME", new Date().toLocaleString());
-                            Log.i(TAG, incomingNumber + " - " + new Date().toLocaleString());
+                            Log.i(TAG, number + " - " + new Date().toLocaleString());
                             context.startService(serviceIntent);
+                            Log.i(TAG, "启动服务完成，为号码：" + number);
                         }
-
+                        break;
                 }
             }
+
         };
 
         return phoneStateListener;
-
 
     }
 }

@@ -1,13 +1,11 @@
 package tttimit.com.smshelper.service;
 
-import android.app.IntentService;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteOpenHelper;
-import android.os.*;
+import android.os.Handler;
+import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
@@ -15,7 +13,6 @@ import tttimit.com.smshelper.Utils.ContactUtils;
 import tttimit.com.smshelper.Utils.DBHelper;
 import tttimit.com.smshelper.Utils.Dao;
 import tttimit.com.smshelper.Utils.MsgSender;
-import tttimit.com.smshelper.activity.MainActivity;
 
 /**
  * Created by tttimit on 2016/5/29.
@@ -37,20 +34,15 @@ public class CallService extends Service {
     }
 
     private static final String TAG = "CallService";
-    private SQLiteOpenHelper dbHelper;
-    private SQLiteDatabase db;
-    private Handler mHandler;
     private Dao dao;
-    private Handler handler = new Handler();
-    private int timeA;
-    private int timeB;
+    private Handler handler;
     private String number;
-    private Context mContext = this;
+    private Context mContext;
 
     public Runnable runnableA = new Runnable() {
         @Override
         public void run() {
-            Log.i(TAG, "此处应为发送消息A");
+            Log.i(TAG, "此处应为发送短信A给：" + number);
             new MsgSender().sentMsg(mContext, number, dao.getAllMessages(DBHelper.TABLE_LIB_A));
         }
     };
@@ -58,7 +50,7 @@ public class CallService extends Service {
     public Runnable runnableB = new Runnable() {
         @Override
         public void run() {
-            Log.i(TAG, "此处应为发送消息B");
+            Log.i(TAG, "此处应为发送消息B给：" + number);
             new MsgSender().sentMsg(mContext, number, dao.getAllMessages(DBHelper.TABLE_LIB_B));
         }
     };
@@ -67,7 +59,7 @@ public class CallService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         number = intent.getStringExtra("INCOMING_NUMBER");
-        if (number == null) number = "未知号码";
+//        if (number == null) number = "未知号码";
         String time = intent.getStringExtra("INCOMING_TIME");
         String name = ContactUtils.getContactNameByPhoneNumber(this, number);
         SharedPreferences sp = getSharedPreferences("setting", MODE_PRIVATE);
@@ -76,11 +68,11 @@ public class CallService extends Service {
         int TIME_FOR_B = sp.getInt("time_for_b", 120);
         dao = Dao.getSingleDao(this);
         if (APP_STATUS == 1 && !dao.isSent(name, number, time)) {
-            if (dao.insertSent(name , number, time)) {
-                Log.i(TAG, "CallService 处理完毕，为号码：" + number + " - " + time);
+            Log.i(TAG, "CallService 处理完毕，为号码：" + number + " - " + time);
+            if (!"未知号码".equals(number)) {
+                handler.postDelayed(runnableA, TIME_FOR_A * 1000);
+                handler.postDelayed(runnableB, TIME_FOR_B * 1000);
             }
-            handler.postDelayed(runnableA, TIME_FOR_A * 1000);
-            handler.postDelayed(runnableB, TIME_FOR_B * 1000);
         }
         return super.onStartCommand(intent, flags, startId);
     }
@@ -88,6 +80,8 @@ public class CallService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
+        handler = new Handler();
+        mContext = this;
     }
 
     @Override

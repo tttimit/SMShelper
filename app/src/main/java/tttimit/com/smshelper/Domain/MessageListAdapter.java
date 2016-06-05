@@ -77,7 +77,7 @@ public class MessageListAdapter extends BaseAdapter {
                     msgList.remove(position);
                     MessageListAdapter.this.notifyDataSetChanged();
                 } else {
-                    Toast.makeText(context, "消息库中至少应保留一条消息", Toast.LENGTH_LONG).show();
+                    Toast.makeText(context, "消息库中至少应保留一条消息", Toast.LENGTH_SHORT).show();
                 }
             }
         });

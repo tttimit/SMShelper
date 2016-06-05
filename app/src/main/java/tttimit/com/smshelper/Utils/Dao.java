@@ -1,10 +1,13 @@
 package tttimit.com.smshelper.Utils;
 
+import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteConstraintException;
 import android.database.sqlite.SQLiteDatabase;
+import android.net.Uri;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -26,11 +29,11 @@ public class Dao {
     private final String[] MESSAGE_COLUMNS = new String[]{"Id", "Content"};
 
 
-    private Context context;
+    private Context mContext;
     private DBHelper dbHelper;
 
     private Dao(Context context) {
-        this.context = context;
+        this.mContext = context;
         dbHelper = new DBHelper(context);
     }
 
@@ -84,7 +87,7 @@ public class Dao {
             db.setTransactionSuccessful();
             return true;
         } catch (SQLiteConstraintException e) {
-            Toast.makeText(context, "主键重复", Toast.LENGTH_SHORT).show();
+            Toast.makeText(mContext, "主键重复", Toast.LENGTH_SHORT).show();
         } catch (Exception e) {
             Log.e(TAG, "插入数据时出错", e);
         } finally {
@@ -180,15 +183,27 @@ public class Dao {
         }
         try {
             db = dbHelper.getReadableDatabase();
-            cursor = db.query(DBHelper.TABLE_SENT_NUMBERS, SENT_COLUMNS, "Number = ?",
-                    new String[]{number}, null, null, null);
+            cursor = db.query(DBHelper.TABLE_SENT_NUMBERS, SENT_COLUMNS, "Number = ? OR Number = ?",
+                    new String[]{number, "+86" + number}, null, null, null);
 
             if (cursor.moveToFirst()) {
                 count = cursor.getInt(0);
             }
             if (count > 0) {
-                insertSent(name, number, time);
                 return true;
+            }else{
+                ContentValues values = new ContentValues();
+                values.put("Name", name);
+                values.put("Number", number);
+                values.put("Time", time);
+                ContentResolver resolver = mContext.getContentResolver();
+                Uri uri = Uri.parse("content://com.tttimit.smshelper.sqlite.provider");
+                resolver.insert(uri, values);
+                resolver.notifyChange(uri, null);
+//                insertSent(name, number, time);
+//                String updateSentNumberLib = "com.example.BroadcastReceiverDemo";
+//                Intent intent = new Intent(updateSentNumberLib);
+//                mContext.sendBroadcast(intent);
             }
         } catch (Exception e) {
             Log.e(TAG, "读取已发送号码库出现错误！", e);
@@ -237,16 +252,16 @@ public class Dao {
 
         try {
             if (sql.contains("select")) {
-                Toast.makeText(context, "执行查找", Toast.LENGTH_SHORT).show();
+                Toast.makeText(mContext, "执行查找", Toast.LENGTH_SHORT).show();
             } else if (sql.contains("insert") || sql.contains("update") || sql.contains("delete")) {
                 db = dbHelper.getWritableDatabase();
                 db.beginTransaction();
                 db.execSQL(sql);
                 db.setTransactionSuccessful();
-                Toast.makeText(context, "执行插入/更新/删除", Toast.LENGTH_SHORT).show();
+                Toast.makeText(mContext, "执行插入/更新/删除", Toast.LENGTH_SHORT).show();
             }
         } catch (Exception e) {
-            Toast.makeText(context, "数据库读写出错！", Toast.LENGTH_SHORT).show();
+            Toast.makeText(mContext, "数据库读写出错！", Toast.LENGTH_SHORT).show();
             Log.e(TAG, "", e);
         } finally {
             if (db != null) {

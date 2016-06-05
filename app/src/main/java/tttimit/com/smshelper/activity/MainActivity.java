@@ -1,8 +1,12 @@
 package tttimit.com.smshelper.activity;
 
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.database.ContentObserver;
+import android.net.Uri;
+import android.os.Handler;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -22,7 +26,10 @@ import android.widget.TabHost;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.sql.Time;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 
 import tttimit.com.smshelper.Domain.Item;
@@ -38,6 +45,7 @@ import tttimit.com.smshelper.receiver.SmsReceiver;
 public class MainActivity extends AppCompatActivity implements TextView.OnEditorActionListener,
         View.OnClickListener, CompoundButton.OnCheckedChangeListener, TextWatcher {
 
+    private Context mContext = this;
     private TabHost mTabHost;
     //    private FrameLayout mFrameLayout;
 //    private LinearLayout ll_home;       //主页面
@@ -147,6 +155,30 @@ public class MainActivity extends AppCompatActivity implements TextView.OnEditor
         time_a.setText(TIME_FOR_A + "");
         time_b.setText(TIME_FOR_B + "");
 
+        registerSentNumberLibObserver();
+
+    }
+
+    private void registerSentNumberLibObserver() {
+        Uri uri = Uri.parse("content://com.tttimit.smshelper.sqlite.provider");
+        getContentResolver().registerContentObserver(uri, true, new MyContentObselver(new Handler()));
+    }
+
+    class MyContentObselver extends ContentObserver {
+        public MyContentObselver(Handler handler) {
+            super(handler);
+        }
+
+        @Override
+        public void onChange(boolean selfChange) {
+            super.onChange(selfChange);
+            sentNumberList = dao.getSentNumbers();
+            if (sentNumberList != null) {
+                sentNumbersAdapter = new SentNumberListAdapter(mContext, sentNumberList);
+                lv_sent.setAdapter(sentNumbersAdapter);
+                Log.i(TAG, "已发送号码列表已更新！");
+            }
+        }
     }
 
     private void initEvent() {
@@ -164,8 +196,9 @@ public class MainActivity extends AppCompatActivity implements TextView.OnEditor
         int viewId = v.getId();
         if (viewId == R.id.time_a || viewId == R.id.time_b) {
             Log.i(TAG, "由于修改了时间，所以开关置为-关闭-");
-            Toast.makeText(this, "由于修改了设置，应用开关已关闭，请在设置完成后手动开启", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "由于修改了设置，应用开关已关闭，请在设置完成后手动开启", Toast.LENGTH_SHORT).show();
             switch1.setChecked(false);
+            APP_STATUS = 0;
         }
         return false;
     }
@@ -184,7 +217,7 @@ public class MainActivity extends AppCompatActivity implements TextView.OnEditor
                                 String content = et_contentA.getText().toString();
                                 if (dao.insertLib(DBHelper.TABLE_LIB_A, content)) {
                                     Toast.makeText(MainActivity.this, "消息添加成功！",
-                                            Toast.LENGTH_LONG).show();
+                                            Toast.LENGTH_SHORT).show();
                                     refreshList(DBHelper.TABLE_LIB_A);
                                 }
                                 dialog.dismiss();
@@ -208,7 +241,7 @@ public class MainActivity extends AppCompatActivity implements TextView.OnEditor
                                 String content = et_contentB.getText().toString();
                                 if (dao.insertLib(DBHelper.TABLE_LIB_B, content)) {
                                     Toast.makeText(MainActivity.this, "消息添加成功！",
-                                            Toast.LENGTH_LONG).show();
+                                            Toast.LENGTH_SHORT).show();
                                     refreshList(DBHelper.TABLE_LIB_B);
                                 }
                                 dialog.dismiss();
@@ -227,7 +260,7 @@ public class MainActivity extends AppCompatActivity implements TextView.OnEditor
                 if (sentNumberList != null) {
                     sentNumberList.clear();
                     sentNumbersAdapter.notifyDataSetChanged();
-                    Toast.makeText(this, "已发送列表已清空！", Toast.LENGTH_LONG).show();
+                    Toast.makeText(this, "已发送列表已清空！", Toast.LENGTH_SHORT).show();
                 }
                 break;
         }
@@ -258,8 +291,12 @@ public class MainActivity extends AppCompatActivity implements TextView.OnEditor
     @Override
     public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
         if (isChecked) {
-            Log.i(TAG, "switch is on!");
-            APP_STATUS = 1;
+            if (timeIsOk()) {
+                Log.i(TAG, "switch is on!");
+                APP_STATUS = 1;
+            } else {
+                Toast.makeText(this, "试用期已过！请联系开发者购买！", Toast.LENGTH_LONG).show();
+            }
         } else {
             Log.i(TAG, "switch is off!");
             APP_STATUS = 0;
@@ -280,6 +317,10 @@ public class MainActivity extends AppCompatActivity implements TextView.OnEditor
 
     }
 
+    private boolean timeIsOk() {
+        return new Date(2016, 6, 8).after(new Date());
+    }
+
     @Override
     public void beforeTextChanged(CharSequence s, int start, int count, int after) {
 
@@ -293,7 +334,7 @@ public class MainActivity extends AppCompatActivity implements TextView.OnEditor
     public void afterTextChanged(Editable s) {
         if (switch1.isChecked()) {
             Log.i(TAG, "由于您修改了，所以开关置为-关闭-");
-            Toast.makeText(this, "由于修改了设置，应用开关已关闭，请在设置完成后手动开启", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "由于修改了设置，应用开关已关闭，请在设置完成后手动开启", Toast.LENGTH_SHORT).show();
             switch1.setChecked(false);
         }
         int time;
@@ -304,7 +345,7 @@ public class MainActivity extends AppCompatActivity implements TextView.OnEditor
         } catch (Exception e) {
             time_a.setText("10");
             time_b.setText("120");
-            Toast.makeText(this, "由于您设置的延时不合法，系统已经重置其为默认值", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "由于您设置的延时不合法，系统已经重置其为默认值", Toast.LENGTH_SHORT).show();
         }
     }
 }
