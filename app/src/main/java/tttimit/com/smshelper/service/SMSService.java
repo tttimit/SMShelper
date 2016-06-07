@@ -21,6 +21,7 @@ import tttimit.com.smshelper.Utils.ContactUtils;
 import tttimit.com.smshelper.Utils.DBHelper;
 import tttimit.com.smshelper.Utils.Dao;
 import tttimit.com.smshelper.Utils.MsgSender;
+import tttimit.com.smshelper.activity.MainActivity;
 
 /**
  * Created by tttimit on 2016/5/29.
@@ -97,12 +98,13 @@ public class SMSService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        SharedPreferences sp = getSharedPreferences("setting", MODE_PRIVATE);
-        int APP_STATUS = sp.getInt("app_status", 0);
+        SharedPreferences sp = getSharedPreferences(MainActivity.sharedPreferencesName, MODE_PRIVATE);
+        int APP_STATUS = sp.getInt(MainActivity.sp_app_status, 0);
+        int TIME_FOR_SMS = sp.getInt(MainActivity.sp_time_for_sms, 123);
         if (APP_STATUS == 1) {
             dao = Dao.getSingleDao(mContext);
             number = intent.getStringExtra("number");
-            handler.postDelayed(runnableB, 40 * 1000);
+            handler.postDelayed(runnableB, TIME_FOR_SMS * 1000);
         }
         return super.onStartCommand(intent, flags, startId);
     }

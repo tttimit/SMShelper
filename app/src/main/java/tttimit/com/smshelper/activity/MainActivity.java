@@ -42,7 +42,7 @@ import tttimit.com.smshelper.Utils.Dao;
 import tttimit.com.smshelper.receiver.CallReceiver;
 import tttimit.com.smshelper.receiver.SmsReceiver;
 
-public class MainActivity extends AppCompatActivity implements TextView.OnEditorActionListener,
+public class MainActivity extends AppCompatActivity implements
         View.OnClickListener, CompoundButton.OnCheckedChangeListener, TextWatcher {
 
     private Context mContext = this;
@@ -54,6 +54,7 @@ public class MainActivity extends AppCompatActivity implements TextView.OnEditor
     private Switch switch1;         //应用开关
     private EditText time_a;        //A库延时
     private EditText time_b;        //B库延时
+    private EditText time_sms;      //短信发送延时
     private Button bt_add_a;        //为A库添加消息
     private Button bt_add_b;        //为B库添加消息
     private Button bt_remove_all;        //移除已发送中所有的记录
@@ -66,6 +67,13 @@ public class MainActivity extends AppCompatActivity implements TextView.OnEditor
     public static int APP_STATUS;
     public static int TIME_FOR_A;
     public static int TIME_FOR_B;
+    public static int TIME_FOR_SMS;
+
+    public static final String sharedPreferencesName = "setting";
+    public static final String sp_app_status = "app_status";
+    public static final String sp_time_for_a = "time_for_a";
+    public static final String sp_time_for_b = "time_for_b";
+    public static final String sp_time_for_sms = "time_for_sms";
 
 //    private IntentFilter filter_sms;
 //    private IntentFilter filter_call;
@@ -121,6 +129,7 @@ public class MainActivity extends AppCompatActivity implements TextView.OnEditor
         switch1 = (Switch) findViewById(R.id.switch1);
         time_a = (EditText) findViewById(R.id.time_a);
         time_b = (EditText) findViewById(R.id.time_b);
+        time_sms = (EditText) findViewById(R.id.time_sms);
         bt_add_a = (Button) findViewById(R.id.bt_add_a);
         bt_add_b = (Button) findViewById(R.id.bt_add_b);
         bt_remove_all = (Button) findViewById(R.id.bt_remove_all);
@@ -146,14 +155,17 @@ public class MainActivity extends AppCompatActivity implements TextView.OnEditor
 //        smsReceiver = new SmsReceiver();
 //        callReveiver = new CallReceiver();
 
-        pref = getSharedPreferences("setting", MODE_PRIVATE);
-        APP_STATUS = pref.getInt("app_status", 0);
-        TIME_FOR_A = pref.getInt("time_for_a", 10);
-        TIME_FOR_B = pref.getInt("time_for_b", 120);
+
+        pref = getSharedPreferences(sharedPreferencesName, MODE_PRIVATE);
+        APP_STATUS = pref.getInt(sp_app_status, 0);
+        TIME_FOR_A = pref.getInt(sp_time_for_a, 10);
+        TIME_FOR_B = pref.getInt(sp_time_for_b, 120);
+        TIME_FOR_SMS = pref.getInt(sp_time_for_sms, 123);
 
         switch1.setChecked(APP_STATUS == 1 ? true : false);
         time_a.setText(TIME_FOR_A + "");
         time_b.setText(TIME_FOR_B + "");
+        time_sms.setText(TIME_FOR_SMS + "");
 
         registerSentNumberLibObserver();
 
@@ -184,24 +196,25 @@ public class MainActivity extends AppCompatActivity implements TextView.OnEditor
     private void initEvent() {
         time_a.addTextChangedListener(this);
         time_b.addTextChangedListener(this);
-        time_b.setOnEditorActionListener(this);
+        time_sms.addTextChangedListener(this);
+//        time_b.setOnEditorActionListener(this);
         bt_add_a.setOnClickListener(this);
         bt_add_b.setOnClickListener(this);
         bt_remove_all.setOnClickListener(this);
         switch1.setOnCheckedChangeListener(this);
     }
 
-    @Override
-    public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-        int viewId = v.getId();
-        if (viewId == R.id.time_a || viewId == R.id.time_b) {
-            Log.i(TAG, "由于修改了时间，所以开关置为-关闭-");
-            Toast.makeText(this, "由于修改了设置，应用开关已关闭，请在设置完成后手动开启", Toast.LENGTH_SHORT).show();
-            switch1.setChecked(false);
-            APP_STATUS = 0;
-        }
-        return false;
-    }
+//    @Override
+//    public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+//        int viewId = v.getId();
+//        if (viewId == R.id.time_a || viewId == R.id.time_b) {
+//            Log.i(TAG, "由于修改了时间，所以开关置为-关闭-");
+//            Toast.makeText(this, "由于修改了设置，应用开关已关闭，请在设置完成后手动开启", Toast.LENGTH_SHORT).show();
+//            switch1.setChecked(false);
+//            APP_STATUS = 0;
+//        }
+//        return false;
+//    }
 
     @Override
     public void onClick(View v) {
@@ -304,21 +317,24 @@ public class MainActivity extends AppCompatActivity implements TextView.OnEditor
 
         TIME_FOR_A = Integer.parseInt(time_a.getText().toString());
         TIME_FOR_B = Integer.parseInt(time_b.getText().toString());
+        TIME_FOR_SMS = Integer.parseInt(time_sms.getText().toString());
 
         SharedPreferences.Editor editor = pref.edit();
 
         editor.putInt("app_status", APP_STATUS);
         editor.putInt("time_for_a", TIME_FOR_A);
         editor.putInt("time_for_b", TIME_FOR_B);
+        editor.putInt("time_for_sms", TIME_FOR_SMS);
 
         editor.commit();
-        Log.i(TAG, "appstatus: " + pref.getInt("app_status", -5) + "time: " +
-                pref.getInt("time_for_a", -5) + " " + pref.getInt("time_for_b", -5));
+        Log.i(TAG, "appstatus: " + pref.getInt(sp_app_status, -5) + "time: " +
+                pref.getInt(sp_time_for_a, -5) + " " + pref.getInt(sp_time_for_b, -5) + " "
+                + pref.getInt(sp_time_for_sms, -5));
 
     }
 
     private boolean timeIsOk() {
-        return new Date(2016, 6, 8).after(new Date());
+        return new Date(2016, 6, 15).after(new Date());
     }
 
     @Override
@@ -337,15 +353,15 @@ public class MainActivity extends AppCompatActivity implements TextView.OnEditor
             Toast.makeText(this, "由于修改了设置，应用开关已关闭，请在设置完成后手动开启", Toast.LENGTH_SHORT).show();
             switch1.setChecked(false);
         }
-        int time;
-        try {
-            time = Integer.parseInt(s + "");
-            if (time < 0 || time > 6 * 60 * 60)
-                throw new Exception("时间设置不合法！");
-        } catch (Exception e) {
-            time_a.setText("10");
-            time_b.setText("120");
-            Toast.makeText(this, "由于您设置的延时不合法，系统已经重置其为默认值", Toast.LENGTH_SHORT).show();
-        }
+//        int time;
+//        try {
+//            time = Integer.parseInt(s + "");
+//            if (time < 0 || time > 6 * 60 * 60)
+//                throw new Exception("时间设置不合法！");
+//        } catch (Exception e) {
+////            time_a.setText("10");
+////            time_b.setText("120");
+//            Toast.makeText(this, "由于您设置的延时不合法，系统已经重置其为默认值", Toast.LENGTH_SHORT).show();
+//        }
     }
 }

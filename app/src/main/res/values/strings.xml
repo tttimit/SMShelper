@@ -1,8 +1,8 @@
 <resources>
     <string name="app_name">短信回发助手</string>
     <string name="app_status">应用开关</string>
-    <string name="lib_a">消息库A发送延时（秒）</string>
-    <string name="lib_b">消息库B发送延时（秒）</string>
+    <string name="lib_a">消息库A发送延时(秒)）</string>
+    <string name="lib_b">消息库B发送延时(秒)</string>
     <string name="help">使用说明</string>
     <string name="help_content1">请在应用权限管理中设置本应用发送短信的权限为允许，并且开启应用开关，应用会在后台运行。</string>
     <string name="help_content2">有未接来电时，系统会在默认时间A过后发送消息库A中的消息给来电号码，默认时间B后发送消息库B中的消息给来电号码。</string>
@@ -11,4 +11,5 @@
     <string name="already_send_desc">已发送（此列表内的号码不会再发送信息）</string>
     <string name="already_send_remove_all">全部清空</string>
     <string name="text_remove">删除</string>
+    <string name="time_for_sms">未读短信回复延时(秒)</string>
 </resources>
