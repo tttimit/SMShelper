@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">短信回发助手</string>
+    <string name="app_name">Uing</string>
     <string name="app_status">应用开关</string>
     <string name="lib_a">消息库A发送延时(秒)）</string>
     <string name="lib_b">消息库B发送延时(秒)</string>

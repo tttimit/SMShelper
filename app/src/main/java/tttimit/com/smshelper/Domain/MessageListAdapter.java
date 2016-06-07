@@ -71,7 +71,7 @@ public class MessageListAdapter extends BaseAdapter {
         holder.bt_remove.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (msgList.size() >= 1) {
+                if (msgList.size() > 1) {
                     Dao dao = Dao.getSingleDao(context);
                     dao.deleteItem(tableName, finalHolder.id);
                     msgList.remove(position);

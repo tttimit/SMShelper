@@ -158,9 +158,9 @@ public class MainActivity extends AppCompatActivity implements
 
         pref = getSharedPreferences(sharedPreferencesName, MODE_PRIVATE);
         APP_STATUS = pref.getInt(sp_app_status, 0);
-        TIME_FOR_A = pref.getInt(sp_time_for_a, 10);
-        TIME_FOR_B = pref.getInt(sp_time_for_b, 120);
-        TIME_FOR_SMS = pref.getInt(sp_time_for_sms, 123);
+        TIME_FOR_A = pref.getInt(sp_time_for_a, 100);
+        TIME_FOR_B = pref.getInt(sp_time_for_b, 100);
+        TIME_FOR_SMS = pref.getInt(sp_time_for_sms, 100);
 
         switch1.setChecked(APP_STATUS == 1 ? true : false);
         time_a.setText(TIME_FOR_A + "");
@@ -334,7 +334,8 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     private boolean timeIsOk() {
-        return new Date(2016, 6, 15).after(new Date());
+//        return new Date(2016, 6, 15).after(new Date());
+        return true;
     }
 
     @Override
